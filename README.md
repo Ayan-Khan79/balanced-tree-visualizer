@@ -146,3 +146,7 @@ Contributions are always welcome! To contribute:
 ## License
 
 This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
+
+## Live
+
+Visit the website and use it. [Live Demo](https://balanced-tree-visualizer.vercel.app/)
