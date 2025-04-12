@@ -14,7 +14,6 @@ export function TreeNode({ node }: TreeNodeProps) {
   const isSelected = selectedNode === node.value
   const isHighlighted = highlightedNodes.includes(node.value)
 
-  // Determine node color based on tree type and node properties
   const getNodeColor = () => {
     if (isSelected) return "bg-node-selected text-white"
     if (isHighlighted) return "bg-node-highlight text-black"
@@ -26,12 +25,10 @@ export function TreeNode({ node }: TreeNodeProps) {
     return "bg-node-default text-black dark:text-white"
   }
 
-  // Calculate node size based on value length
   const nodeSize = Math.max(40, 30 + String(node.value).length * 10)
 
   return (
     <>
-      {/* Draw edges to children */}
       {node.left && (
         <motion.div
           className="absolute h-[2px] bg-border dark:bg-gray-600 origin-left"
@@ -64,7 +61,6 @@ export function TreeNode({ node }: TreeNodeProps) {
         />
       )}
 
-      {/* Node circle */}
       <motion.div
         className={`absolute rounded-full flex items-center justify-center ${getNodeColor()}`}
         style={{
@@ -79,7 +75,6 @@ export function TreeNode({ node }: TreeNodeProps) {
       >
         <span className="font-bold">{node.value}</span>
 
-        {/* Balance factor or color indicator */}
         {treeType === "avl" && (
           <span className="absolute -top-6 text-xs bg-background dark:bg-gray-800 px-1 rounded">
             {node.balanceFactor}

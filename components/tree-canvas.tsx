@@ -17,14 +17,12 @@ export function TreeCanvas() {
   const [startPos, setStartPos] = useState({ x: 0, y: 0 })
   const isMobile = useMobile()
 
-  // Handle zoom
   const handleZoom = (event: React.WheelEvent) => {
     event.preventDefault()
     const delta = event.deltaY > 0 ? -0.1 : 0.1
     setScale((prevScale) => Math.min(Math.max(prevScale + delta, 0.5), 2))
   }
 
-  // Handle pan start
   const handlePanStart = (event: React.MouseEvent | React.TouchEvent) => {
     if (animationState === "animating") return
 
@@ -37,7 +35,6 @@ export function TreeCanvas() {
     }
   }
 
-  // Handle pan move
   const handlePanMove = (event: MouseEvent | TouchEvent) => {
     if (!isDragging) return
 
@@ -55,12 +52,10 @@ export function TreeCanvas() {
     }
   }
 
-  // Handle pan end
   const handlePanEnd = () => {
     setIsDragging(false)
   }
 
-  // Add event listeners for pan
   useEffect(() => {
     const moveHandler = (e: MouseEvent | TouchEvent) => handlePanMove(e)
     const upHandler = () => handlePanEnd()
@@ -80,7 +75,6 @@ export function TreeCanvas() {
     }
   }, [isDragging])
 
-  // Reset position and scale when nodes change
   useEffect(() => {
     if (nodes.length === 0) {
       setPosition({ x: 0, y: 0 })
@@ -109,7 +103,6 @@ export function TreeCanvas() {
         ))}
       </motion.div>
 
-      {/* Zoom controls for mobile */}
       {isMobile && (
         <div className="absolute bottom-4 right-4 flex gap-2">
           <button

@@ -46,7 +46,6 @@ export function TreeProvider({
   const [highlightedNodes, setHighlightedNodes] = useState<number[]>([])
   const [traversalResult, setTraversalResult] = useState<number[]>([])
 
-  // Update tree when tree type changes
   useEffect(() => {
     setTree(treeType === "avl" ? new AVLTree() : new RedBlackTree())
     setNodes([])
@@ -56,11 +55,8 @@ export function TreeProvider({
     setTraversalResult([])
   }, [treeType])
 
-  // Update nodes when tree changes
   useEffect(() => {
-    if (tree) {
-      setNodes(tree.getNodesForRendering())
-    }
+    if (tree) setNodes(tree.getNodesForRendering())
   }, [tree])
 
   const insertNode = useCallback(
@@ -79,7 +75,6 @@ export function TreeProvider({
           setMessage(result.message || `Failed to insert node ${value}`)
         }
 
-        // Reset animation state after a delay
         setTimeout(() => {
           setAnimationState("idle")
           setSelectedNode(null)
@@ -109,7 +104,6 @@ export function TreeProvider({
           setMessage(result.message || `Failed to delete node ${value}`)
         }
 
-        // Reset animation state after a delay
         setTimeout(() => {
           setAnimationState("idle")
           setSelectedNode(null)
@@ -139,7 +133,6 @@ export function TreeProvider({
           setHighlightedNodes(result.path || [])
         }
 
-        // Reset animation state after a delay
         setTimeout(() => {
           setAnimationState("idle")
           setSelectedNode(null)
@@ -162,7 +155,6 @@ export function TreeProvider({
         setTraversalResult(result)
         setMessage(`${type.charAt(0).toUpperCase() + type.slice(1)} traversal: ${result.join(", ")}`)
 
-        // Animate traversal
         const animateTraversal = (index: number) => {
           if (index < result.length) {
             setSelectedNode(result[index])
