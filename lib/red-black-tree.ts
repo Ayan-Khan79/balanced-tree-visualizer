@@ -31,11 +31,9 @@ export class RedBlackTree implements TreeInterface {
     const y = x.right as TreeNode
     const T2 = y.left
 
-    // Perform rotation
     y.left = x
     x.right = T2
 
-    // Update parent references
     y.parent = x.parent
     x.parent = y
     if (T2) T2.parent = x
@@ -47,11 +45,9 @@ export class RedBlackTree implements TreeInterface {
     const x = y.left as TreeNode
     const T2 = x.right
 
-    // Perform rotation
     x.right = y
     y.left = T2
 
-    // Update parent references
     x.parent = y.parent
     y.parent = x
     if (T2) T2.parent = y
@@ -71,7 +67,7 @@ export class RedBlackTree implements TreeInterface {
     // Case 1: Right child is red, left child is black (or null)
     if (this.isRed(node.right) && !this.isRed(node.left)) {
       node = this.rotateLeft(node)
-      // Swap colors
+
       const tempColor = node.color
       node.color = (node.left as TreeNode).color
       ;(node.left as TreeNode).color = tempColor
@@ -80,7 +76,7 @@ export class RedBlackTree implements TreeInterface {
     // Case 2: Left child and left-left grandchild are both red
     if (node.left && this.isRed(node.left) && node.left.left && this.isRed(node.left.left)) {
       node = this.rotateRight(node)
-      // Swap colors
+
       const tempColor = node.color
       node.color = (node.right as TreeNode).color
       ;(node.right as TreeNode).color = tempColor
@@ -95,14 +91,13 @@ export class RedBlackTree implements TreeInterface {
   }
 
   private insertNode(node: TreeNode | null, value: number, path: number[] = []): { node: TreeNode; path: number[] } {
-    // Base case: empty tree or reached a leaf
     if (node === null) {
       return { node: this.createNode(value), path }
     }
 
     path.push(node.value)
 
-    // Recursively insert into the appropriate subtree
+
     if (value < node.value) {
       const result = this.insertNode(node.left, value, path)
       node.left = result.node
@@ -112,11 +107,9 @@ export class RedBlackTree implements TreeInterface {
       node.right = result.node
       node.right.parent = node
     } else {
-      // Duplicate value, return the existing node
       return { node, path }
     }
 
-    // Fix Red-Black tree properties
     const fixResult = this.insertFixup(node, path)
     return fixResult as { node: TreeNode; path: number[] }
   }
@@ -129,12 +122,9 @@ export class RedBlackTree implements TreeInterface {
     return current
   }
 
+  // TODO
   private deleteFixup(node: TreeNode | null): TreeNode | null {
     if (node === null) return null
-
-    // Implementation of Red-Black tree deletion fixup
-    // This is a simplified version and would need to be expanded for a complete implementation
-
     return node
   }
 
@@ -149,7 +139,6 @@ export class RedBlackTree implements TreeInterface {
 
     path.push(node.value)
 
-    // Recursively search for the node to delete
     if (value < node.value) {
       const result = this.deleteNode(node.left, value, path)
       node.left = result.node
@@ -159,24 +148,20 @@ export class RedBlackTree implements TreeInterface {
       node.right = result.node
       if (node.right) node.right.parent = node
     } else {
-      // Node with only one child or no child
       if (node.left === null) {
         return { node: node.right, path }
       } else if (node.right === null) {
         return { node: node.left, path }
       }
 
-      // Node with two children: Get the inorder successor
       const successor = this.findMinValueNode(node.right)
       node.value = successor.value
 
-      // Delete the inorder successor
       const result = this.deleteNode(node.right, successor.value, path)
       node.right = result.node
       if (node.right) node.right.parent = node
     }
 
-    // Fix Red-Black tree properties after deletion
     node = this.deleteFixup(node)
 
     return { node, path }
@@ -243,7 +228,6 @@ export class RedBlackTree implements TreeInterface {
     return result
   }
 
-  // Public methods
   insert(value: number): TreeOperation {
     try {
       if (this.root === null) {
@@ -253,7 +237,7 @@ export class RedBlackTree implements TreeInterface {
 
       const { node, path } = this.insertNode(this.root, value, [])
       this.root = node
-      this.root.color = "black" // Root must always be black
+      this.root.color = "black"
       return { success: true, path }
     } catch (error) {
       return {
@@ -272,7 +256,7 @@ export class RedBlackTree implements TreeInterface {
 
       const { node, path } = this.deleteNode(this.root, value, [])
       this.root = node
-      if (this.root) this.root.color = "black" // Root must always be black
+      if (this.root) this.root.color = "black"
       return { success: true, path }
     } catch (error) {
       return {

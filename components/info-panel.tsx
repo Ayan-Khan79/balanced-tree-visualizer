@@ -65,7 +65,6 @@ export function InfoPanel() {
         </div>
       )}
 
-      {/* Tutorial Overlay */}
       {showTutorial && (
         <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <Card className="w-full max-w-2xl">

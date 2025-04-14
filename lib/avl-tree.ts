@@ -42,20 +42,16 @@ export class AVLTree implements TreeInterface {
     const x = y.left as TreeNode
     const T2 = x.right
 
-    // Perform rotation
     x.right = y
     y.left = T2
 
-    // Update parent references
     x.parent = y.parent
     y.parent = x
     if (T2) T2.parent = y
 
-    // Update heights
     this.updateHeight(y)
     this.updateHeight(x)
 
-    // Update balance factors
     this.updateBalanceFactor(y)
     this.updateBalanceFactor(x)
 
@@ -66,20 +62,16 @@ export class AVLTree implements TreeInterface {
     const y = x.right as TreeNode
     const T2 = y.left
 
-    // Perform rotation
     y.left = x
     x.right = T2
 
-    // Update parent references
     y.parent = x.parent
     x.parent = y
     if (T2) T2.parent = x
 
-    // Update heights
     this.updateHeight(x)
     this.updateHeight(y)
 
-    // Update balance factors
     this.updateBalanceFactor(x)
     this.updateBalanceFactor(y)
 
@@ -87,29 +79,28 @@ export class AVLTree implements TreeInterface {
   }
 
   private balance(node: TreeNode): TreeNode {
-    // Update height and balance factor
     this.updateHeight(node)
     this.updateBalanceFactor(node)
 
-    // Left heavy
+    // Left
     if (node.balanceFactor > 1) {
-      // Left-Right case
+      // LR case
       if (this.getBalanceFactor(node.left) < 0) {
         node.left = this.rotateLeft(node.left as TreeNode)
         return this.rotateRight(node)
       }
-      // Left-Left case
+      // LL case
       return this.rotateRight(node)
     }
 
-    // Right heavy
+    // Right
     if (node.balanceFactor < -1) {
-      // Right-Left case
+      // RL case
       if (this.getBalanceFactor(node.right) > 0) {
         node.right = this.rotateRight(node.right as TreeNode)
         return this.rotateLeft(node)
       }
-      // Right-Right case
+      // RR case
       return this.rotateLeft(node)
     }
 
@@ -117,14 +108,12 @@ export class AVLTree implements TreeInterface {
   }
 
   private insertNode(node: TreeNode | null, value: number, path: number[] = []): { node: TreeNode; path: number[] } {
-    // Base case: empty tree or reached a leaf
     if (node === null) {
       return { node: this.createNode(value), path }
     }
 
     path.push(node.value)
 
-    // Recursively insert into the appropriate subtree
     if (value < node.value) {
       const result = this.insertNode(node.left, value, path)
       node.left = result.node
@@ -134,11 +123,9 @@ export class AVLTree implements TreeInterface {
       node.right = result.node
       node.right.parent = node
     } else {
-      // Duplicate value, return the existing node
       return { node, path }
     }
 
-    // Balance the tree after insertion
     return { node: this.balance(node), path }
   }
 
@@ -161,7 +148,6 @@ export class AVLTree implements TreeInterface {
 
     path.push(node.value)
 
-    // Recursively search for the node to delete
     if (value < node.value) {
       const result = this.deleteNode(node.left, value, path)
       node.left = result.node
@@ -171,24 +157,20 @@ export class AVLTree implements TreeInterface {
       node.right = result.node
       if (node.right) node.right.parent = node
     } else {
-      // Node with only one child or no child
       if (node.left === null) {
         return { node: node.right, path }
       } else if (node.right === null) {
         return { node: node.left, path }
       }
 
-      // Node with two children: Get the inorder successor
       const successor = this.findMinValueNode(node.right)
       node.value = successor.value
 
-      // Delete the inorder successor
       const result = this.deleteNode(node.right, successor.value, path)
       node.right = result.node
       if (node.right) node.right.parent = node
     }
 
-    // Balance the tree after deletion
     if (node) {
       return { node: this.balance(node), path }
     }
@@ -257,7 +239,6 @@ export class AVLTree implements TreeInterface {
     return result
   }
 
-  // Public methods
   insert(value: number): TreeOperation {
     try {
       if (this.root === null) {
