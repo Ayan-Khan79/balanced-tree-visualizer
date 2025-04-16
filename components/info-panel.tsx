@@ -7,14 +7,17 @@ import { Button } from "@/components/ui/button"
 import { ChevronUp, ChevronDown, HelpCircle, X } from "lucide-react"
 
 export function InfoPanel() {
-  const { message, traversalResult, treeType } = useTree()
+  const { message, traversalResult, treeType, animationSteps, currentStepIndex } = useTree()
   const [isExpanded, setIsExpanded] = useState(false)
   const [showTutorial, setShowTutorial] = useState(false)
+
+  const currentStep = animationSteps[currentStepIndex]
+  const displayMessage = currentStep ? currentStep.message : message
 
   return (
     <div className="border-t relative">
       <div className="flex justify-between items-center p-2 border-b">
-        <div className="flex-1 font-medium truncate">{message}</div>
+        <div className="flex-1 font-medium truncate">{displayMessage}</div>
         <div className="flex items-center gap-2">
           <Button variant="ghost" size="icon" onClick={() => setShowTutorial(!showTutorial)} aria-label="Show tutorial">
             <HelpCircle className="h-4 w-4" />
@@ -62,6 +65,21 @@ export function InfoPanel() {
               </CardContent>
             </Card>
           </div>
+
+          {animationSteps.length > 0 && (
+            <>
+              <h3 className="font-semibold mt-4 mb-2">Animation Progress</h3>
+              <div className="w-full bg-muted rounded-full h-2.5">
+                <div
+                  className="bg-primary h-2.5 rounded-full"
+                  style={{ width: `${((currentStepIndex + 1) / animationSteps.length) * 100}%` }}
+                ></div>
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                Step {currentStepIndex + 1} of {animationSteps.length}
+              </p>
+            </>
+          )}
         </div>
       )}
 
@@ -109,6 +127,15 @@ export function InfoPanel() {
                 </div>
 
                 <div>
+                  <h3 className="text-lg font-semibold">Animation Controls</h3>
+                  <ul className="list-disc pl-5 space-y-1">
+                    <li>Use the animation speed slider to control how fast operations are visualized</li>
+                    <li>Use the step buttons to move forward and backward through animations</li>
+                    <li>Pause and resume animations to study tree operations in detail</li>
+                  </ul>
+                </div>
+
+                <div>
                   <h3 className="text-lg font-semibold">Navigation</h3>
                   <ul className="list-disc pl-5 space-y-1">
                     <li>Use the mouse wheel to zoom in and out</li>
@@ -138,4 +165,3 @@ export function InfoPanel() {
     </div>
   )
 }
-

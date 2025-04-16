@@ -17,6 +17,7 @@ export interface TreeNode {
   color?: NodeColor
   isHighlighted?: boolean
   isSelected?: boolean
+  isComparing?: boolean
 }
 
 export interface TreeOperation {
@@ -24,13 +25,26 @@ export interface TreeOperation {
   message?: string
   path?: number[]
   rotationType?: RotationType
+  steps?: AnimationStep[]
 }
 
 export interface TreeInterface {
-  insert(value: number): TreeOperation
-  delete(value: number): TreeOperation
-  find(value: number): { found: boolean; path: number[] }
+  insert(value: number, animate?: boolean): TreeOperation
+  delete(value: number, animate?: boolean): TreeOperation
+  find(value: number, animate?: boolean): { found: boolean; path: number[]; steps?: AnimationStep[] }
   traverse(type: TraversalType): number[]
   getNodesForRendering(): TreeNode[]
 }
 
+export type AnimationStepType = "comparison" | "highlight" | "rotation" | "update"
+
+export interface AnimationStep {
+  type: AnimationStepType
+  value: number
+  targetValue?: number
+  message: string
+  path?: number[]
+  affectedNodes?: number[]
+  rotationType?: RotationType
+  duration?: number
+}

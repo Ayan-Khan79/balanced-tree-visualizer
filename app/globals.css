@@ -83,4 +83,3 @@
 .gradient-bg {
   @apply bg-gradient-to-tr from-blue-900 via-blue-600 to-emerald-400 dark:from-blue-950 dark:via-blue-800 dark:to-emerald-600;
 }
-

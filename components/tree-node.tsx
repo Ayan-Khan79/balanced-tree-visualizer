@@ -9,13 +9,15 @@ interface TreeNodeProps {
 }
 
 export function TreeNode({ node }: TreeNodeProps) {
-  const { selectedNode, highlightedNodes, treeType } = useTree()
+  const { selectedNode, highlightedNodes, comparisonNode, treeType } = useTree()
 
   const isSelected = selectedNode === node.value
   const isHighlighted = highlightedNodes.includes(node.value)
+  const isComparing = comparisonNode === node.value
 
   const getNodeColor = () => {
     if (isSelected) return "bg-node-selected text-white"
+    if (isComparing) return "bg-warning text-black"
     if (isHighlighted) return "bg-node-highlight text-black"
 
     if (treeType === "redblack" && node.color) {
@@ -70,8 +72,16 @@ export function TreeNode({ node }: TreeNodeProps) {
           top: node.y - nodeSize / 2,
         }}
         initial={{ scale: 0 }}
-        animate={{ scale: 1 }}
-        transition={{ type: "spring", stiffness: 300, damping: 20 }}
+        animate={{
+          scale: 1,
+          boxShadow: isComparing || isSelected ? "0 0 15px 5px rgba(255, 215, 0, 0.7)" : "none",
+        }}
+        transition={{
+          type: "spring",
+          stiffness: 300,
+          damping: 20,
+          boxShadow: { duration: 0.5, repeat: isComparing ? Number.POSITIVE_INFINITY : 0, repeatType: "reverse" },
+        }}
       >
         <span className="font-bold">{node.value}</span>
 
@@ -84,4 +94,3 @@ export function TreeNode({ node }: TreeNodeProps) {
     </>
   )
 }
-

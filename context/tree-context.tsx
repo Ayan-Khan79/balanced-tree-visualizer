@@ -1,10 +1,10 @@
 "use client"
 
 import type React from "react"
-import { createContext, useContext, useState, useEffect, useCallback } from "react"
+import { createContext, useContext, useState, useEffect, useCallback, useRef } from "react"
 import { AVLTree } from "@/lib/avl-tree"
 import { RedBlackTree } from "@/lib/red-black-tree"
-import type { TreeNode, TreeType, TraversalType, AnimationState } from "@/types/tree-types"
+import type { TreeNode, TreeType, TraversalType, AnimationState, AnimationStep } from "@/types/tree-types"
 
 interface TreeContextProps {
   treeType: TreeType
@@ -15,7 +15,10 @@ interface TreeContextProps {
   animationState: AnimationState
   selectedNode: number | null
   highlightedNodes: number[]
+  comparisonNode: number | null
   traversalResult: number[]
+  animationSteps: AnimationStep[]
+  currentStepIndex: number
   insertNode: (value: number) => void
   deleteNode: (value: number) => void
   findNode: (value: number) => void
@@ -24,6 +27,8 @@ interface TreeContextProps {
   pauseAnimation: () => void
   resumeAnimation: () => void
   resetAnimation: () => void
+  nextAnimationStep: () => void
+  previousAnimationStep: () => void
 }
 
 const TreeContext = createContext<TreeContextProps | undefined>(undefined)
@@ -44,7 +49,12 @@ export function TreeProvider({
   const [animationState, setAnimationState] = useState<AnimationState>("idle")
   const [selectedNode, setSelectedNode] = useState<number | null>(null)
   const [highlightedNodes, setHighlightedNodes] = useState<number[]>([])
+  const [comparisonNode, setComparisonNode] = useState<number | null>(null)
   const [traversalResult, setTraversalResult] = useState<number[]>([])
+  const [animationSteps, setAnimationSteps] = useState<AnimationStep[]>([])
+  const [currentStepIndex, setCurrentStepIndex] = useState<number>(-1)
+
+  const animationTimerRef = useRef<NodeJS.Timeout | null>(null)
 
   useEffect(() => {
     setTree(treeType === "avl" ? new AVLTree() : new RedBlackTree())
@@ -52,69 +62,159 @@ export function TreeProvider({
     setMessage(`Switched to ${treeType === "avl" ? "AVL" : "Red-Black"} Tree`)
     setSelectedNode(null)
     setHighlightedNodes([])
+    setComparisonNode(null)
     setTraversalResult([])
+    setAnimationSteps([])
+    setCurrentStepIndex(-1)
+
+    if (animationTimerRef.current) {
+      clearTimeout(animationTimerRef.current)
+      animationTimerRef.current = null
+    }
   }, [treeType])
 
   useEffect(() => {
-    if (tree) setNodes(tree.getNodesForRendering())
+    if (tree) {
+      setNodes(tree.getNodesForRendering())
+    }
   }, [tree])
+
+  const processAnimationSteps = useCallback(
+    (steps: AnimationStep[]) => {
+      setAnimationSteps(steps)
+      setCurrentStepIndex(0)
+      setAnimationState("animating")
+
+      const runAnimation = (index: number) => {
+        if (index >= steps.length) {
+          setAnimationState("idle")
+          setSelectedNode(null)
+          setHighlightedNodes([])
+          setComparisonNode(null)
+          return
+        }
+
+        const step = steps[index]
+
+        setMessage(step.message)
+
+        if (step.type === "comparison") {
+          setComparisonNode(step.value)
+          setSelectedNode(step.targetValue || null)
+        } else if (step.type === "highlight") {
+          setHighlightedNodes(step.path || [])
+          setSelectedNode(step.value)
+          setComparisonNode(null)
+        } else if (step.type === "rotation") {
+          setHighlightedNodes(step.affectedNodes || [])
+          setMessage(`${step.rotationType} Rotation: ${step.message}`)
+        } else if (step.type === "update") {
+          setNodes(tree.getNodesForRendering())
+        }
+
+        setCurrentStepIndex(index)
+
+        animationTimerRef.current = setTimeout(() => runAnimation(index + 1), step.duration || 1000 / animationSpeed)
+      }
+
+      if (steps.length > 0) {
+        runAnimation(0)
+      }
+    },
+    [animationSpeed, tree],
+  )
+
+  const nextAnimationStep = useCallback(() => {
+    if (currentStepIndex < animationSteps.length - 1) {
+      setCurrentStepIndex((prev) => prev + 1)
+      const nextStep = animationSteps[currentStepIndex + 1]
+
+      setMessage(nextStep.message)
+
+      if (nextStep.type === "comparison") {
+        setComparisonNode(nextStep.value)
+        setSelectedNode(nextStep.targetValue || null)
+      } else if (nextStep.type === "highlight") {
+        setHighlightedNodes(nextStep.path || [])
+        setSelectedNode(nextStep.value)
+        setComparisonNode(null)
+      } else if (nextStep.type === "rotation") {
+        setHighlightedNodes(nextStep.affectedNodes || [])
+        setMessage(`${nextStep.rotationType} Rotation: ${nextStep.message}`)
+      } else if (nextStep.type === "update") {
+        setNodes(tree.getNodesForRendering())
+      }
+    } else {
+      setAnimationState("idle")
+      setSelectedNode(null)
+      setHighlightedNodes([])
+      setComparisonNode(null)
+    }
+  }, [currentStepIndex, animationSteps, tree])
+
+  const previousAnimationStep = useCallback(() => {
+    if (currentStepIndex > 0) {
+      setCurrentStepIndex((prev) => prev - 1)
+      const prevStep = animationSteps[currentStepIndex - 1]
+
+      setMessage(prevStep.message)
+
+      if (prevStep.type === "comparison") {
+        setComparisonNode(prevStep.value)
+        setSelectedNode(prevStep.targetValue || null)
+      } else if (prevStep.type === "highlight") {
+        setHighlightedNodes(prevStep.path || [])
+        setSelectedNode(prevStep.value)
+        setComparisonNode(null)
+      } else if (prevStep.type === "rotation") {
+        setHighlightedNodes(prevStep.affectedNodes || [])
+        setMessage(`${prevStep.rotationType} Rotation: ${prevStep.message}`)
+      } else if (prevStep.type === "update") {
+        setNodes(tree.getNodesForRendering())
+      }
+    }
+  }, [currentStepIndex, animationSteps, tree])
 
   const insertNode = useCallback(
     (value: number) => {
       try {
         setAnimationState("animating")
-        setSelectedNode(value)
 
-        const result = tree.insert(value)
-        setNodes(tree.getNodesForRendering())
+        const result = tree.insert(value, true)
 
         if (result.success) {
-          setMessage(`Node ${value} inserted successfully`)
-          setHighlightedNodes(result.path || [])
+          processAnimationSteps(result.steps || [])
         } else {
           setMessage(result.message || `Failed to insert node ${value}`)
-        }
-
-        setTimeout(() => {
           setAnimationState("idle")
-          setSelectedNode(null)
-          setHighlightedNodes([])
-        }, 1000 / animationSpeed)
+        }
       } catch (error) {
         setMessage(`Error: ${error instanceof Error ? error.message : String(error)}`)
         setAnimationState("idle")
       }
     },
-    [tree, animationSpeed],
+    [tree, processAnimationSteps],
   )
 
   const deleteNode = useCallback(
     (value: number) => {
       try {
         setAnimationState("animating")
-        setSelectedNode(value)
 
-        const result = tree.delete(value)
-        setNodes(tree.getNodesForRendering())
+        const result = tree.delete(value, true)
 
         if (result.success) {
-          setMessage(`Node ${value} deleted successfully`)
-          setHighlightedNodes(result.path || [])
+          processAnimationSteps(result.steps || [])
         } else {
           setMessage(result.message || `Failed to delete node ${value}`)
-        }
-
-        setTimeout(() => {
           setAnimationState("idle")
-          setSelectedNode(null)
-          setHighlightedNodes([])
-        }, 1000 / animationSpeed)
+        }
       } catch (error) {
         setMessage(`Error: ${error instanceof Error ? error.message : String(error)}`)
         setAnimationState("idle")
       }
     },
-    [tree, animationSpeed],
+    [tree, processAnimationSteps],
   )
 
   const findNode = useCallback(
@@ -122,28 +222,15 @@ export function TreeProvider({
       try {
         setAnimationState("animating")
 
-        const result = tree.find(value)
+        const result = tree.find(value, true)
 
-        if (result.found) {
-          setMessage(`Node ${value} found`)
-          setSelectedNode(value)
-          setHighlightedNodes(result.path || [])
-        } else {
-          setMessage(`Node ${value} not found`)
-          setHighlightedNodes(result.path || [])
-        }
-
-        setTimeout(() => {
-          setAnimationState("idle")
-          setSelectedNode(null)
-          setHighlightedNodes([])
-        }, 1500 / animationSpeed)
+        processAnimationSteps(result.steps || [])
       } catch (error) {
         setMessage(`Error: ${error instanceof Error ? error.message : String(error)}`)
         setAnimationState("idle")
       }
     },
-    [tree, animationSpeed],
+    [tree, processAnimationSteps],
   )
 
   const traverseTree = useCallback(
@@ -155,38 +242,92 @@ export function TreeProvider({
         setTraversalResult(result)
         setMessage(`${type.charAt(0).toUpperCase() + type.slice(1)} traversal: ${result.join(", ")}`)
 
-        const animateTraversal = (index: number) => {
-          if (index < result.length) {
-            setSelectedNode(result[index])
-            setTimeout(() => animateTraversal(index + 1), 500 / animationSpeed)
-          } else {
-            setAnimationState("idle")
-            setSelectedNode(null)
-          }
-        }
+        const steps: AnimationStep[] = result.map((value, index) => ({
+          type: "highlight",
+          value,
+          message: `Traversing node ${value} (${index + 1}/${result.length})`,
+          duration: 500 / animationSpeed,
+        }))
 
-        animateTraversal(0)
+        processAnimationSteps(steps)
       } catch (error) {
         setMessage(`Error: ${error instanceof Error ? error.message : String(error)}`)
         setAnimationState("idle")
       }
     },
-    [tree, animationSpeed],
+    [tree, animationSpeed, processAnimationSteps],
   )
 
   const pauseAnimation = useCallback(() => {
     setAnimationState("paused")
+
+    if (animationTimerRef.current) {
+      clearTimeout(animationTimerRef.current)
+      animationTimerRef.current = null
+    }
   }, [])
 
   const resumeAnimation = useCallback(() => {
-    setAnimationState("animating")
-  }, [])
+    if (animationState === "paused" && currentStepIndex < animationSteps.length - 1) {
+      setAnimationState("animating")
+
+      const runAnimation = (index: number) => {
+        if (index >= animationSteps.length) {
+          setAnimationState("idle")
+          setSelectedNode(null)
+          setHighlightedNodes([])
+          setComparisonNode(null)
+          return
+        }
+
+        const step = animationSteps[index]
+
+        setMessage(step.message)
+
+        if (step.type === "comparison") {
+          setComparisonNode(step.value)
+          setSelectedNode(step.targetValue || null)
+        } else if (step.type === "highlight") {
+          setHighlightedNodes(step.path || [])
+          setSelectedNode(step.value)
+          setComparisonNode(null)
+        } else if (step.type === "rotation") {
+          setHighlightedNodes(step.affectedNodes || [])
+          setMessage(`${step.rotationType} Rotation: ${step.message}`)
+        } else if (step.type === "update") {
+          setNodes(tree.getNodesForRendering())
+        }
+
+        setCurrentStepIndex(index)
+
+        animationTimerRef.current = setTimeout(() => runAnimation(index + 1), step.duration || 1000 / animationSpeed)
+      }
+
+      runAnimation(currentStepIndex + 1)
+    }
+  }, [animationState, currentStepIndex, animationSteps, animationSpeed, tree])
 
   const resetAnimation = useCallback(() => {
+    if (animationTimerRef.current) {
+      clearTimeout(animationTimerRef.current)
+      animationTimerRef.current = null
+    }
+
     setAnimationState("idle")
     setSelectedNode(null)
     setHighlightedNodes([])
-    setTraversalResult([])
+    setComparisonNode(null)
+    setAnimationSteps([])
+    setCurrentStepIndex(-1)
+    setNodes(tree.getNodesForRendering())
+  }, [tree])
+
+  useEffect(() => {
+    return () => {
+      if (animationTimerRef.current) {
+        clearTimeout(animationTimerRef.current)
+      }
+    }
   }, [])
 
   const value = {
@@ -198,7 +339,10 @@ export function TreeProvider({
     animationState,
     selectedNode,
     highlightedNodes,
+    comparisonNode,
     traversalResult,
+    animationSteps,
+    currentStepIndex,
     insertNode,
     deleteNode,
     findNode,
@@ -207,6 +351,8 @@ export function TreeProvider({
     pauseAnimation,
     resumeAnimation,
     resetAnimation,
+    nextAnimationStep,
+    previousAnimationStep,
   }
 
   return <TreeContext.Provider value={value}>{children}</TreeContext.Provider>
@@ -219,4 +365,3 @@ export function useTree() {
   }
   return context
 }
-

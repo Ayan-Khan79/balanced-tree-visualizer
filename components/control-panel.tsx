@@ -10,7 +10,18 @@ import { Slider } from "@/components/ui/slider"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import type { TraversalType } from "@/types/tree-types"
-import { Plus, Trash, Search, Play, Pause, RotateCcw, ChevronUp, ChevronDown } from "lucide-react"
+import {
+  Plus,
+  Trash,
+  Search,
+  Play,
+  Pause,
+  RotateCcw,
+  ChevronUp,
+  ChevronDown,
+  SkipBack,
+  SkipForward,
+} from "lucide-react"
 
 export function ControlPanel() {
   const {
@@ -23,8 +34,12 @@ export function ControlPanel() {
     pauseAnimation,
     resumeAnimation,
     resetAnimation,
+    nextAnimationStep,
+    previousAnimationStep,
     animationState,
     treeType,
+    animationSteps,
+    currentStepIndex,
   } = useTree()
 
   const [nodeValue, setNodeValue] = useState<string>("")
@@ -92,19 +107,34 @@ export function ControlPanel() {
                   onChange={(e) => setNodeValue(e.target.value)}
                   onKeyDown={handleKeyDown}
                   className="flex-1"
+                  disabled={animationState === "animating"}
                 />
               </div>
 
               <div className="grid grid-cols-3 gap-2">
-                <Button onClick={handleInsert} className="flex items-center gap-1">
+                <Button
+                  onClick={handleInsert}
+                  className="flex items-center gap-1"
+                  disabled={animationState === "animating" || nodeValue === ""}
+                >
                   <Plus className="h-4 w-4" />
                   Insert
                 </Button>
-                <Button onClick={handleDelete} variant="destructive" className="flex items-center gap-1">
+                <Button
+                  onClick={handleDelete}
+                  variant="destructive"
+                  className="flex items-center gap-1"
+                  disabled={animationState === "animating" || nodeValue === ""}
+                >
                   <Trash className="h-4 w-4" />
                   Delete
                 </Button>
-                <Button onClick={handleFind} variant="secondary" className="flex items-center gap-1">
+                <Button
+                  onClick={handleFind}
+                  variant="secondary"
+                  className="flex items-center gap-1"
+                  disabled={animationState === "animating" || nodeValue === ""}
+                >
                   <Search className="h-4 w-4" />
                   Find
                 </Button>
@@ -124,19 +154,39 @@ export function ControlPanel() {
                 </TabsList>
                 <TabsContent value="inorder" className="space-y-2">
                   <div className="grid grid-cols-3 gap-2">
-                    <Button onClick={() => handleTraversal("inorder")} variant="outline" size="sm">
+                    <Button
+                      onClick={() => handleTraversal("inorder")}
+                      variant="outline"
+                      size="sm"
+                      disabled={animationState === "animating"}
+                    >
                       In-Order
                     </Button>
-                    <Button onClick={() => handleTraversal("preorder")} variant="outline" size="sm">
+                    <Button
+                      onClick={() => handleTraversal("preorder")}
+                      variant="outline"
+                      size="sm"
+                      disabled={animationState === "animating"}
+                    >
                       Pre-Order
                     </Button>
-                    <Button onClick={() => handleTraversal("postorder")} variant="outline" size="sm">
+                    <Button
+                      onClick={() => handleTraversal("postorder")}
+                      variant="outline"
+                      size="sm"
+                      disabled={animationState === "animating"}
+                    >
                       Post-Order
                     </Button>
                   </div>
                 </TabsContent>
                 <TabsContent value="levelorder">
-                  <Button onClick={() => handleTraversal("levelorder")} variant="outline" className="w-full">
+                  <Button
+                    onClick={() => handleTraversal("levelorder")}
+                    variant="outline"
+                    className="w-full"
+                    disabled={animationState === "animating"}
+                  >
                     Level-Order Traversal
                   </Button>
                 </TabsContent>
@@ -163,23 +213,59 @@ export function ControlPanel() {
                 />
               </div>
 
-              <div className="grid grid-cols-3 gap-2">
-                {animationState === "animating" ? (
-                  <Button onClick={pauseAnimation} variant="outline" className="flex items-center gap-1">
-                    <Pause className="h-4 w-4" />
-                    Pause
+              {animationState !== "idle" && (
+                <div className="grid grid-cols-5 gap-2">
+                  <Button
+                    onClick={previousAnimationStep}
+                    variant="outline"
+                    size="icon"
+                    disabled={currentStepIndex <= 0}
+                    title="Previous step"
+                  >
+                    <SkipBack className="h-4 w-4" />
                   </Button>
-                ) : (
-                  <Button onClick={resumeAnimation} variant="outline" className="flex items-center gap-1">
-                    <Play className="h-4 w-4" />
-                    Resume
+
+                  {animationState === "animating" ? (
+                    <Button onClick={pauseAnimation} variant="outline" className="flex items-center gap-1 col-span-3">
+                      <Pause className="h-4 w-4" />
+                      Pause
+                    </Button>
+                  ) : (
+                    <Button onClick={resumeAnimation} variant="outline" className="flex items-center gap-1 col-span-3">
+                      <Play className="h-4 w-4" />
+                      Resume
+                    </Button>
+                  )}
+
+                  <Button
+                    onClick={nextAnimationStep}
+                    variant="outline"
+                    size="icon"
+                    disabled={currentStepIndex >= animationSteps.length - 1}
+                    title="Next step"
+                  >
+                    <SkipForward className="h-4 w-4" />
                   </Button>
-                )}
-                <Button onClick={resetAnimation} variant="outline" className="flex items-center gap-1 col-span-2">
-                  <RotateCcw className="h-4 w-4" />
-                  Reset Animation
-                </Button>
-              </div>
+                </div>
+              )}
+
+              <Button
+                onClick={resetAnimation}
+                variant="outline"
+                className="flex items-center gap-1 w-full"
+                disabled={animationState === "idle"}
+              >
+                <RotateCcw className="h-4 w-4" />
+                Reset Animation
+              </Button>
+
+              {animationSteps.length > 0 && (
+                <div className="text-xs text-muted-foreground">
+                  <p>
+                    Step {currentStepIndex + 1} of {animationSteps.length}
+                  </p>
+                </div>
+              )}
             </CardContent>
           </Card>
 
@@ -196,4 +282,3 @@ export function ControlPanel() {
     </div>
   )
 }
-
